@@ -6,7 +6,7 @@ The project 3 solution for Udacity Deep Reinforcement Learning nano degree.
 
 * 1. download this repository
 * 2. install the requirements in a separate Anaconda environment: `pip install -r requirements.txt`
-* 3. run the solution file [**Tennis.ipynb**](https://github.com/hynpu/drlnd_p2_reacher/blob/main/Continuous_Control.ipynb)
+* 3. run the solution file [**Tennis.ipynb**](https://github.com/hynpu/drlnd_p3_compet/blob/main/Tennis.ipynb)
 
 # Goal
 
