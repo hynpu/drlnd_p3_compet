@@ -1,8 +1,3 @@
-@@ -1,2 +1,49 @@
-<<<<<<< HEAD
-# drlnd_p3_collaborate
- The project 3 (Tennis environment) of the Deep reinforcement learning for Udacity Nanodegree
-=======
 # Project 3 (Collaboration and Competition) for Udacity Deep Reinforcement Learning Nanodegree
 
 The project 3 solution for Udacity Deep Reinforcement Learning nano degree.
@@ -11,7 +6,7 @@ The project 3 solution for Udacity Deep Reinforcement Learning nano degree.
 
 * 1. download this repository
 * 2. install the requirements in a separate Anaconda environment: `pip install -r requirements.txt`
-* 3. run the solution file [**Tennis.ipynb**](https://github.com/hynpu/drlnd_p2_reacher/blob/main/Continuous_Control.ipynb)
+* 3. run the solution file [**Tennis.ipynb**](https://github.com/hynpu/drlnd_p3_compet/blob/main/Tennis.ipynb)
 
 # Goal
 
@@ -47,4 +42,69 @@ MADDPG, or Multi-agent DDPG, extends DDPG into a multi-agent policy gradient alg
 
 It leads to learned policies that only use local information (i.e. their own observations) at execution time, does not assume a differentiable model of the environment dynamics or any particular structure on the communication method between agents, and is applicable not only to cooperative interaction but to competitive or mixed interaction involving both physical and communicative behavior. The critic is augmented with extra information about the policies of other agents, while the actor only has access to local information. After training is completed, only the local actors are used at execution phase, acting in a decentralized manner.
 
->>>>>>> df9c398f7ff0d9cf77a969859ef85926089a0350
+![MADDPG code](https://github.com/hynpu/drlnd_p3_compet/blob/main/images/maddpg%20psudo%20code.png)
+
+# Approach
+
+The high level structure shows as the following, and the code under [**maddpg_agent.py**](https://github.com/hynpu/drlnd_p3_compet/blob/main/maddpg_agent.py) follows the diagram:
+
+![MADDPG illustration](https://github.com/hynpu/drlnd_p3_compet/blob/main/images/Screen%20Shot%202022-06-26%20at%207.08.58%20PM.png)
+
+## 1. The state and action space of this environment
+
+The observation space consists of 8 variables corresponding to the position and velocity of the ball and racket. Each agent receives its own, local observation. Two continuous actions are available, corresponding to movement toward (or away from) the net, and jumping.
+
+    # reset the environment
+    env_info = env.reset(train_mode=True)[brain_name]
+
+    # number of agents 
+    num_agents = len(env_info.agents)
+    print('Number of agents:', num_agents)
+
+    # size of each action
+    action_size = brain.vector_action_space_size
+    print('Size of each action:', action_size)
+
+    # examine the state space 
+    states = env_info.vector_observations
+    state_size = states.shape[1]
+    print('There are {} agents. Each observes a state with length: {}'.format(states.shape[0], state_size))
+    print('The state for the first agent looks like:', states[0])
+    
+## 2. Explore the environment by taking random actions
+
+We then take some random actions based on the environment we created just now, and see how the agents perform (apparently it will be bad without learning)
+
+    for i in range(1, 6):                                      # play game for 5 episodes
+        env_info = env.reset(train_mode=False)[brain_name]     # reset the environment    
+        states = env_info.vector_observations                  # get the current state (for each agent)
+        scores = np.zeros(num_agents)                          # initialize the score (for each agent)
+        while True:
+            actions = np.random.randn(num_agents, action_size) # select an action (for each agent)
+            actions = np.clip(actions, -1, 1)                  # all actions between -1 and 1
+            env_info = env.step(actions)[brain_name]           # send all actions to tne environment
+            next_states = env_info.vector_observations         # get next state (for each agent)
+
+            rewards = env_info.rewards                         # get reward (for each agent)
+            dones = env_info.local_done                        # see if episode finished
+            scores += env_info.rewards                         # update the score (for each agent)
+            states = next_states                               # roll over states to next time step
+            if np.any(dones):                                  # exit loop if episode finished
+                break
+        print('Score (max over agents) from episode {}: {}'.format(i, np.max(scores)))
+
+## 3. Implement the MADDPG algo to train the agent
+
+The last step is to implement the MADDPG algorithm to trian the agents. The code can be found in [**maddpg_agent.py**](https://github.com/hynpu/drlnd_p3_compet/blob/main/maddpg_agent.py). However, I would like to mention several techniques to improve the speed and convergence:
+
+  * Adjust the OU noise by adding decreasing factors, and related discussions can be found in this repo: [Udacity discuss channel](https://knowledge.udacity.com/questions/25366)
+
+  * Change different discount factor GAMMA to see the performance. The agent does not need to see too far to predict its next movement. So slightly reduce the GAMMA value to focus more on the current states.
+
+
+
+# Results:
+
+The average rewards along with the traning process show as following:
+
+![Results](https://github.com/hynpu/drlnd_p3_compet/blob/main/images/results.png)
