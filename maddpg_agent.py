@@ -18,8 +18,6 @@ LEARN_EVERY = 1         # learning timestep interval
 LEARN_NUM = 5           # number of learning passes
 GAMMA = 0.9             # discount factor
 TAU = 8e-3              # for soft update of target parameters
-OU_SIGMA = 0.2          # Ornstein-Uhlenbeck noise parameter, volatility
-OU_THETA = 0.15         # Ornstein-Uhlenbeck noise parameter, speed of mean reversion
 EPS_START = 5.0         # initial value for epsilon in noise decay process in Agent.act()
 EPS_EP_END = 500        # episode to end the noise decay process
 EPS_FINAL = 0           # final value for epsilon after decay
@@ -44,7 +42,7 @@ class Agent():
         self.action_size = action_size
         self.num_agents = num_agents
         self.seed = random.seed(random_seed)
-        self.eps = EPS_START
+        self.epsilon = EPS_START
         self.eps_decay = 1/(EPS_EP_END*LEARN_NUM)  # set decay rate based on epsilon end target
         self.timestep = 0
 
@@ -83,7 +81,7 @@ class Agent():
             action = self.actor_local(state).cpu().data.numpy()
         self.actor_local.train()
         if add_noise:
-            action += self.eps * self.noise.sample()
+            action += self.epsilon * self.noise.sample()
         return np.clip(action, -1, 1)
 
     def reset(self):
@@ -142,8 +140,8 @@ class Agent():
         self.soft_update(self.actor_local, self.actor_target, TAU)
 
         # update noise decay parameter
-        self.eps -= self.eps_decay
-        self.eps = max(self.eps, EPS_FINAL)
+        self.epsilon -= self.eps_decay
+        self.epsilon = max(self.epsilon, EPS_FINAL)
         self.noise.reset()
 
     def soft_update(self, local_model, target_model, tau):
@@ -161,13 +159,13 @@ class Agent():
 class OUNoise:
     """Ornstein-Uhlenbeck process."""
 
-    def __init__(self, size, seed, mu=0.0, theta=OU_THETA, sigma=OU_SIGMA):
+    def __init__(self, size, seed, mu=0., theta=0.15, sigma=0.2):
         """Initialize parameters and noise process.
         Params
         ======
-            mu (float)    : long-running mean
-            theta (float) : speed of mean reversion
-            sigma (float) : volatility parameter
+            mu: long-running mean
+            theta: the speed of mean reversion
+            sigma: the volatility parameter
         """
         self.mu = mu * np.ones(size)
         self.theta = theta
@@ -202,12 +200,12 @@ class ReplayBuffer:
         self.batch_size = batch_size
         self.experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
         self.seed = random.seed(seed)
-
+    
     def add(self, state, action, reward, next_state, done):
         """Add a new experience to memory."""
         e = self.experience(state, action, reward, next_state, done)
         self.memory.append(e)
-
+    
     def sample(self):
         """Randomly sample a batch of experiences from memory."""
         experiences = random.sample(self.memory, k=self.batch_size)
